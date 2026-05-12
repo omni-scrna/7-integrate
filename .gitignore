@@ -1,0 +1,19 @@
+# OmniBenchmark outputs
+out/
+.obflow/
+.envs/
+.modules/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# pixi
+.pixi/
+
+# OS / IDE
+.DS_Store
+.vscode/
+*.swp
