@@ -19,12 +19,6 @@ script_dir <- (function() {
 })()
 source(file.path(script_dir, "src", "cli.R"))
 
-# creating some fake stuff for testing
-args = list()
-args$rawdata_h5ad = '../split-stages-plan/out/one-data/datasets/dataset_name-sc-mix/datasets.h5ad'
-args$pcas_tsv = '../rapids-singlecell/tests/data/datasets_pcas.tsv'
-args$batch_variable = 'cell_line'
-
 
 main <- function() {
   args <- parse_harmony_args()
@@ -44,8 +38,7 @@ main <- function() {
   )
 
   # get pca embedding
-  pca_df  <- fread(args$pcas_tsv) %>%
-    setnames(old = 'V1', new = 'cell_id') # this is only here because the test data doesn't have a cell_id column and should be removed later
+  pca_df  <- fread(args$pcas_tsv)
   pc_cols <- colnames(pca_df)[grep('PC', colnames(pca_df))]
   embedding <- as.matrix(pca_df[, ..pc_cols]) # cells x PCs
   rownames(embedding) <- pca_df$cell_id
