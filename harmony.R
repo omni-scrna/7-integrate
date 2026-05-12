@@ -64,7 +64,7 @@ main <- function() {
   ) 
 
   colnames(corrected) <- paste0("hmny", seq_len(ncol(corrected)))
-  out <- file.path(args$output_dir, paste0(args$name, "_hmny_corrected.tsv"))
+  out <- file.path(args$output_dir, paste0(args$name, "_corrected.tsv"))
   fwrite(data.table(cell_id = rownames(corrected), corrected), out, sep = "\t",
     quote = FALSE, row.names = FALSE)
   cat(sprintf("  wrote: %s\n", out))
