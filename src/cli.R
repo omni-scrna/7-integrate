@@ -13,8 +13,8 @@ build_harmony_parser <- function() {
                 help = "TSV of uncorrected PCA embeddings (cell_id + PC columns)"),
     make_option("--rawdata.h5ad", type = "character",
                 help = "AnnData HDF5 file; obs is read for batch labels"),
-    make_option("--batch_variable", type = "character",
-                help = "Column name in obs to use as batch variable"),
+    make_option("--batch.info", type = "character",
+                help = "Path to YAML file with batch_variable field"),
     make_option("--theta", type = "double",
                 help = "Harmony diversity penalty (higher = more correction)")
   )
@@ -29,12 +29,12 @@ parse_harmony_args <- function() {
   raw <- parse_args(parser)
 
   args <- list(
-    output_dir     = raw$output_dir,
-    name           = raw$name,
-    pcas_tsv       = raw[["pcas.tsv"]],
-    rawdata_h5ad   = raw[["rawdata.h5ad"]],
-    batch_variable = raw$batch_variable,
-    theta          = raw$theta
+    output_dir   = raw$output_dir,
+    name         = raw$name,
+    pcas_tsv     = raw[["pcas.tsv"]],
+    rawdata_h5ad = raw[["rawdata.h5ad"]],
+    batch_info   = raw[["batch.info"]],
+    theta        = raw$theta
   )
 
   required <- names(args)

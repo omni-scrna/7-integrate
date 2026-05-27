@@ -10,6 +10,7 @@ suppressPackageStartupMessages({
   library(rhdf5)
   library(data.table)
   library(magrittr)
+  library(yaml)
 })
 
 script_dir <- (function() {
@@ -26,23 +27,34 @@ main <- function() {
   for (k in names(args)) cat(sprintf("  %s: %s\n", k, args[[k]]))
 
   dir.create(args$output_dir, showWarnings = FALSE, recursive = TRUE)
-  
-  # get read cell ids and batch values form obs in h5ad without reading X
-  cell_ids   <- h5read(args$rawdata_h5ad, paste0("obs/", "_index")) %>%
-    as.character()
-  batch_vals <- h5read(args$rawdata_h5ad, paste0("obs/", args$batch_variable)) %>%
-    as.character()
-  meta_dt    <- data.table(
-    cell_id = cell_ids, 
-    batch   = batch_vals
-  )
+  out <- file.path(args$output_dir, paste0(args$name, "_corrected.tsv"))
 
-  # get pca embedding
+  # read batch variable from yaml
+  batch_variable <- read_yaml(args$batch_info)$batch_variable
+
+  # get pca embedding (needed in both branches)
   pca_df  <- fread(args$pcas_tsv)
   pc_cols <- colnames(pca_df)[grep('PC', colnames(pca_df))]
+
+  # pass-through: write uncorrected PCA with hmny* column names and exit
+  if (is.null(batch_variable)) {
+    cat("  no batch variable: writing uncorrected PCA as pass-through\n")
+    passthrough <- copy(pca_df[, c("cell_id", pc_cols), with = FALSE])
+    setnames(passthrough, pc_cols, paste0("hmny", seq_along(pc_cols)))
+    fwrite(passthrough, out, sep = "\t", quote = FALSE, row.names = FALSE)
+    cat(sprintf("  wrote: %s\n", out))
+    return(invisible(NULL))
+  }
+
   embedding <- as.matrix(pca_df[, ..pc_cols]) # cells x PCs
   rownames(embedding) <- pca_df$cell_id
   cat(sprintf("  embedding (cells x PCs): %d x %d\n", nrow(embedding), ncol(embedding)))
+
+  # get cell ids and batch values from obs in h5ad without reading X
+  cell_ids   <- h5read(args$rawdata_h5ad, "obs/_index") %>% as.character()
+  batch_vals <- h5read(args$rawdata_h5ad, paste0("obs/", batch_variable)) %>%
+    as.character()
+  meta_dt    <- data.table(cell_id = cell_ids, batch = batch_vals)
 
   # subset obs to the post-filter cells present in the pca tsv
   meta_dt_filt <- meta_dt %>%
@@ -50,10 +62,10 @@ main <- function() {
     data.table::setkey('cell_id')
   # make sure batch values are in correct order
   meta_dt_filt <- meta_dt_filt[pca_df$cell_id]
-  
+
   cat(sprintf("  batch variable '%s': %d levels (%s)\n",
-    args$batch_variable, length(unique(meta_dt_filt$batch)),
-    paste(unique(meta_dt_filt$batch), collapse = ", "))) 
+    batch_variable, length(unique(meta_dt_filt$batch)),
+    paste(unique(meta_dt_filt$batch), collapse = ", ")))
 
   corrected <- RunHarmony(
     data_mat   = embedding,
@@ -61,10 +73,9 @@ main <- function() {
     vars_use   = "batch",
     theta      = args$theta,
     verbose    = TRUE
-  ) 
+  )
 
   colnames(corrected) <- paste0("hmny", seq_len(ncol(corrected)))
-  out <- file.path(args$output_dir, paste0(args$name, "_corrected.tsv"))
   fwrite(data.table(cell_id = rownames(corrected), corrected), out, sep = "\t",
     quote = FALSE, row.names = FALSE)
   cat(sprintf("  wrote: %s\n", out))
