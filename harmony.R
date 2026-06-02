@@ -10,6 +10,7 @@ suppressPackageStartupMessages({
   library(rhdf5)
   library(data.table)
   library(magrittr)
+  library(yaml)
 })
 
 script_dir <- (function() {
@@ -26,14 +27,17 @@ main <- function() {
   for (k in names(args)) cat(sprintf("  %s: %s\n", k, args[[k]]))
 
   dir.create(args$output_dir, showWarnings = FALSE, recursive = TRUE)
-  
+
+  batch_variable <- args$batch_variable
+  cat(sprintf("  batch_variable (from properties.info): %s\n", batch_variable))
+
   # get read cell ids and batch values form obs in h5ad without reading X
   cell_ids   <- h5read(args$rawdata_h5ad, paste0("obs/", "_index")) %>%
     as.character()
-  batch_vals <- h5read(args$rawdata_h5ad, paste0("obs/", args$batch_variable)) %>%
+  batch_vals <- h5read(args$rawdata_h5ad, paste0("obs/", batch_variable)) %>%
     as.character()
   meta_dt    <- data.table(
-    cell_id = cell_ids, 
+    cell_id = cell_ids,
     batch   = batch_vals
   )
 
@@ -52,7 +56,7 @@ main <- function() {
   meta_dt_filt <- meta_dt_filt[pca_df$cell_id]
   
   cat(sprintf("  batch variable '%s': %d levels (%s)\n",
-    args$batch_variable, length(unique(meta_dt_filt$batch)),
+    batch_variable, length(unique(meta_dt_filt$batch)),
     paste(unique(meta_dt_filt$batch), collapse = ", "))) 
 
   corrected <- RunHarmony(
@@ -63,7 +67,7 @@ main <- function() {
     verbose    = TRUE
   ) 
 
-  colnames(corrected) <- paste0("hmny", seq_len(ncol(corrected)))
+  colnames(corrected) <- paste0("corrected_dim", seq_len(ncol(corrected)))
   out <- file.path(args$output_dir, paste0(args$name, "_corrected.tsv"))
   fwrite(data.table(cell_id = rownames(corrected), corrected), out, sep = "\t",
     quote = FALSE, row.names = FALSE)
