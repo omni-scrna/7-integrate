@@ -19,7 +19,9 @@ build_harmony_parser <- function() {
     make_option("--properties.info", type = "character",
                 help = "YAML file with batch_var, sample_var, labels_var fields"),
     make_option("--theta", type = "double",
-                help = "Harmony diversity penalty (higher = more correction)")
+                help = "Harmony diversity penalty (higher = more correction)"), 
+    make_option("--loadings.tsv", type = "character", default = NULL, 
+                help = "Ignored")
   )
   OptionParser(
     option_list = option_list,
