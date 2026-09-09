@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # Harmony batch correction module for omnibenchmark.
 #
-# Reads uncorrected PCA embeddings (pcas.tsv) and batch labels from the obs
+# Reads uncorrected embeddings (embedding.tsv) and batch labels from the obs
 # group of rawdata.h5ad (without loading the count matrix), runs Harmony,
 # and writes corrected embeddings in the same TSV layout as the input.
 
@@ -49,7 +49,7 @@ main <- function() {
   )
 
   # get pca embedding
-  pca_df  <- fread(args$pcas_tsv)
+  pca_df  <- fread(args$embedding_tsv)
   pc_cols <- colnames(pca_df)[grep('PC', colnames(pca_df))]
   embedding <- as.matrix(pca_df[, ..pc_cols]) # cells x PCs
   rownames(embedding) <- pca_df$cell_id
